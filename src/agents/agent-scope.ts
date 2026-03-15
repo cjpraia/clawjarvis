@@ -11,6 +11,7 @@ import {
   resolveAgentIdFromSessionKey,
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
+import { isBuiltinAgent, getBuiltinAgentConfig } from "./builtin-agents/index.js";
 import { normalizeSkillFilter } from "./skills/filter.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 const log = createSubsystemLogger("agent-scope");
@@ -53,11 +54,11 @@ export function listAgentEntries(cfg: OpenClawConfig): AgentEntry[] {
 
 export function listAgentIds(cfg: OpenClawConfig): string[] {
   const agents = listAgentEntries(cfg);
-  if (agents.length === 0) {
-    return [DEFAULT_AGENT_ID];
-  }
+
+  // Start with configured agents
   const seen = new Set<string>();
   const ids: string[] = [];
+
   for (const entry of agents) {
     const id = normalizeAgentId(entry?.id);
     if (seen.has(id)) {
@@ -66,6 +67,16 @@ export function listAgentIds(cfg: OpenClawConfig): string[] {
     seen.add(id);
     ids.push(id);
   }
+
+  // Always include built-in agents
+  const builtinIds = ["builder", "researcher", "reviewer", "ops"];
+  for (const id of builtinIds) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+
   return ids.length > 0 ? ids : [DEFAULT_AGENT_ID];
 }
 
@@ -112,7 +123,26 @@ export function resolveSessionAgentId(params: {
 
 function resolveAgentEntry(cfg: OpenClawConfig, agentId: string): AgentEntry | undefined {
   const id = normalizeAgentId(agentId);
-  return listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === id);
+
+  // First, check configured agents
+  const configured = listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === id);
+  if (configured) {
+    return configured;
+  }
+
+  // If not found and it's a built-in agent, return a config entry
+  if (isBuiltinAgent(id)) {
+    const builtin = getBuiltinAgentConfig(id);
+    if (builtin) {
+      // Return as AgentEntry format
+      return {
+        id: builtin.id,
+        name: builtin.name,
+      };
+    }
+  }
+
+  return undefined;
 }
 
 export function resolveAgentConfig(
