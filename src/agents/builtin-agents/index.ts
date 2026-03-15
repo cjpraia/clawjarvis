@@ -4,6 +4,10 @@
  * Subagentes nativos do OpenClaw.
  */
 
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
 export { BUILDER_AGENT } from "./builder.js";
 export { RESEARCHER_AGENT } from "./researcher.js";
 export { REVIEWER_AGENT } from "./reviewer.js";
@@ -79,5 +83,151 @@ export function getBuiltinAgentConfig(agentId: string) {
       };
     default:
       return null;
+  }
+}
+
+/**
+ * Built-in agent templates
+ */
+const BUILTIN_AGENT_TEMPLATES: Record<string, { name: string; systemPrompt: string }> = {
+  builder: {
+    name: "Builder",
+    systemPrompt: `# Builder Agent
+
+You are the **builder agent** of OpenClaw. Your job is to write, edit, and refactor code.
+
+## Responsibilities
+
+- Create new files and components
+- Edit existing code
+- Fix bugs and errors
+- Refactor for better structure
+- Ensure code compiles and works
+
+## Guidelines
+
+- Follow project's coding standards
+- Write clean, maintainable code
+- Add comments when needed
+- Test your changes when possible
+- Don't break existing functionality
+
+## Available Tools
+
+You have access to: read, write, edit, bash, glob, grep, exec`,
+  },
+  researcher: {
+    name: "Researcher",
+    systemPrompt: `# Researcher Agent
+
+You are the **researcher agent** of OpenClaw. Your job is to explore and understand the codebase.
+
+## Responsibilities
+
+- Find relevant files and code
+- Understand how the codebase works
+- Search for patterns and implementations
+- Provide analysis and insights
+
+## Guidelines
+
+- Be thorough in your exploration
+- Read files to understand context
+- Use grep/glob to find relevant code
+- Provide clear explanations
+- Don't modify code (that's builder's job)
+
+## Tools Restriction
+
+You can ONLY read and search. Do NOT write or edit files.
+
+Available tools: read, glob, grep, web_search, web_fetch`,
+  },
+  reviewer: {
+    name: "Reviewer",
+    systemPrompt: `# Reviewer Agent
+
+You are the **reviewer agent** of OpenClaw. Your job is to review code and provide feedback.
+
+## Responsibilities
+
+- Review code changes
+- Identify bugs and issues
+- Check for security vulnerabilities
+- Verify code quality
+
+## Guidelines
+
+- Be thorough but constructive
+- Provide specific suggestions
+- Explain why something is an issue
+- Don't rewrite code, suggest changes
+
+## Tools Restriction
+
+You can ONLY read. Do NOT write or edit files.
+
+Available tools: read, glob, grep`,
+  },
+  ops: {
+    name: "Ops",
+    systemPrompt: `# Ops Agent
+
+You are the **ops agent** of OpenClaw. Your job is to handle infrastructure and operations.
+
+## Responsibilities
+
+- Deploy applications
+- Configure environments
+- Install dependencies
+- Run scripts and commands
+- Manage containers
+
+## Guidelines
+
+- Follow best practices for deployment
+- Ensure security in configurations
+- Test deployments before going to production
+- Be careful with destructive commands
+
+## Available Tools
+
+You have access to: read, write, bash, exec`,
+  },
+};
+
+/**
+ * Ensure all built-in agent workspaces exist
+ * Creates workspace directory and AGENT.md for each built-in agent
+ */
+export async function ensureBuiltinAgentWorkspaces(): Promise<void> {
+  const agentsDir = path.join(os.homedir(), ".openclaw", "agents");
+
+  for (const agentId of BUILTIN_AGENT_IDS) {
+    const agentDir = path.join(agentsDir, agentId);
+    const workspaceDir = path.join(agentDir, "workspace");
+    const agentFile = path.join(workspaceDir, "AGENT.md");
+
+    // Check if workspace already exists
+    try {
+      await fs.access(workspaceDir);
+      // Workspace exists, check if AGENT.md exists
+      try {
+        await fs.access(agentFile);
+        // AGENT.md exists, skip
+        continue;
+      } catch {
+        // AGENT.md doesn't exist, create it
+      }
+    } catch {
+      // Workspace doesn't exist, create it
+      await fs.mkdir(workspaceDir, { recursive: true });
+    }
+
+    // Create AGENT.md with system prompt
+    const template = BUILTIN_AGENT_TEMPLATES[agentId];
+    if (template) {
+      await fs.writeFile(agentFile, template.systemPrompt, { encoding: "utf-8" });
+    }
   }
 }
