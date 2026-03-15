@@ -346,6 +346,8 @@ Improved Response:
     let currentResponse = initialResponse;
     let iterations = 0;
     let issuesFixed = 0;
+    let previousScore = 0;
+    let stuckCount = 0; // Contador para detectar loop
 
     while (iterations < this.config.maxIterations) {
       iterations++;
@@ -363,10 +365,37 @@ Improved Response:
         };
       }
 
+      // Se score não melhorou desde a última iteração, incrementa stuckCount
+      if (result.score <= previousScore) {
+        stuckCount++;
+        // Se stuck 2x seguidas, sai do loop (não está melhorando)
+        if (stuckCount >= 2) {
+          return {
+            success: false,
+            iterations,
+            finalResult: currentResponse,
+            issuesFixed,
+          };
+        }
+      } else {
+        stuckCount = 0;
+      }
+      previousScore = result.score;
+
       // Se não está boa e auto-refine está ativado, refina
       if (this.config.autoRefine && result.issues.length > 0) {
         const previousIssueCount = result.issues.length;
         currentResponse = await this.refine(task, currentResponse, result.issues);
+
+        // Se a resposta não mudou desde o início, sai do loop
+        if (currentResponse === initialResponse && iterations > 1) {
+          return {
+            success: false,
+            iterations,
+            finalResult: currentResponse,
+            issuesFixed,
+          };
+        }
 
         if (currentResponse !== initialResponse) {
           issuesFixed += previousIssueCount;
