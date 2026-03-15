@@ -101,6 +101,45 @@ function buildTimeSection(params: { userTimezone?: string }) {
   return ["## Current Date & Time", `Time zone: ${params.userTimezone}`, ""];
 }
 
+function buildOrchestratorSection() {
+  return [
+    "## Subagent Routing (when to use built-in agents)",
+    "",
+    "You have access to specialized subagents. Use them when appropriate:",
+    "",
+    "**builder** - Use when the task involves:",
+    "  - Creating new code, files, or components",
+    "  - Editing or refactoring existing code",
+    "  - Fixing bugs",
+    "  - Keywords: crie, faça, implemente, refatore, corriga, build, create, fix, code",
+    "",
+    "**researcher** - Use when the task involves:",
+    "  - Searching or exploring the codebase",
+    "  - Understanding how something works",
+    "  - Finding files or patterns",
+    "  - Keywords: pesquise, analise, busque, investigate, search, analyze, o que é, como funciona",
+    "",
+    "**reviewer** - Use when the task involves:",
+    "  - Reviewing code changes",
+    "  - Checking for bugs or issues",
+    "  - Code review",
+    "  - Keywords: revise, review, analise código, verify, check, examine",
+    "",
+    "**ops** - Use when the task involves:",
+    "  - Infrastructure, deployment, configuration",
+    "  - Installing dependencies",
+    "  - Managing containers or servers",
+    "  - Keywords: deploy, configure, instale, setup, docker, npm, environment",
+    "",
+    "**When to NOT delegate:**",
+    "  - Simple questions (what time is it, basic conversation)",
+    "  - Tasks you can handle directly",
+    "",
+    "To use a subagent, use the sessions_spawn tool with the appropriate agentId.",
+    "",
+  ];
+}
+
 function buildReplyTagsSection(isMinimal: boolean) {
   if (isMinimal) {
     return [];
@@ -565,6 +604,7 @@ export function buildAgentSystemPrompt(params: {
     ...buildTimeSection({
       userTimezone,
     }),
+    ...buildOrchestratorSection(),
     "## Workspace Files (injected)",
     "These user-editable files are loaded by OpenClaw and included below in Project Context.",
     "",
