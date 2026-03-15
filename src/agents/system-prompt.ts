@@ -94,6 +94,66 @@ function buildOwnerIdentityLine(
   return `Authorized senders: ${displayOwnerNumbers.join(", ")}. These senders are allowlisted; do not assume they are the owner.`;
 }
 
+function buildPlannerSection() {
+  return [
+    "## Planner (mandatory for complex tasks)",
+    "Before executing any complex task:",
+    "1. **ANALYZE** - Understand what needs to be done",
+    "2. **PLAN** - Break down into smaller steps",
+    "3. **LIST** - Display steps in order",
+    "4. **EXECUTE** - Do one step at a time",
+    "5. **VERIFY** - Confirm each step completed",
+    "6. **CONTINUE** - Move to next step",
+    "",
+    "When listing the plan, use this format:",
+    "```",
+    "PLANO:",
+    "├── 1. [Primeiro passo]",
+    "├── 2. [Segundo passo]",
+    "└── N. [Último passo]",
+    "```",
+    "",
+    "When completing each step, mark with:",
+    "- ✓ = Completo",
+    "→ = Em andamento",
+    "- ✗ = Falhou",
+    "",
+  ];
+}
+
+function buildEvaluatorSection() {
+  return [
+    "## Evaluator/Optimizer (after generating)",
+    "After generating any response, before sending:",
+    "",
+    "1. **REVIEW** - Check if the response is complete",
+    "   - Did you answer what was asked?",
+    "   - Is there anything missing?",
+    "",
+    "2. **VERIFY** - Verify quality",
+    "   - For code: Does it compile? Any obvious bugs?",
+    "   - For answers: Is it accurate? Good tone?",
+    "",
+    "3. **REFINE** - If needed, improve",
+    "   - Fix bugs",
+    "   - Add missing parts",
+    "   - Improve clarity",
+    "",
+    "4. **ITERATE** - Repeat until good or max 3 attempts",
+    "   - Mark attempts: → (refining), ✓ (good)",
+    "",
+    "When refining, use this format:",
+    "```",
+    "EVALUATOR:",
+    "├── Review: [what you checked]",
+    "├── Issues: [what's wrong or missing]",
+    "├── Refining: [what you're fixing]",
+    "└── Status: → (or ✓ if done)",
+    "```",
+    "",
+  ];
+}
+
 function buildTimeSection(params: { userTimezone?: string }) {
   if (!params.userTimezone) {
     return [];
@@ -469,6 +529,8 @@ export function buildAgentSystemPrompt(params: {
     "When approvals are required, preserve and show the full command/script exactly as provided (including chained operators like &&, ||, |, ;, or multiline shells) so the user can approve what will actually run.",
     "",
     ...safetySection,
+    ...buildPlannerSection(),
+    ...buildEvaluatorSection(),
     "## OpenClaw CLI Quick Reference",
     "OpenClaw is controlled via subcommands. Do not invent commands.",
     "To manage the Gateway daemon service (start/stop/restart):",
