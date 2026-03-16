@@ -16,7 +16,7 @@ export { OPS_AGENT } from "./ops.js";
 /**
  * Built-in agent IDs
  */
-export const BUILTIN_AGENT_IDS = ["builder", "researcher", "reviewer", "ops"] as const;
+export const BUILTIN_AGENT_IDS = ["builder", "researcher", "reviewer", "ops", "browser"] as const;
 
 /**
  * Check if agent ID is a built-in
