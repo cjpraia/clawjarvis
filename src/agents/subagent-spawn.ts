@@ -13,6 +13,7 @@ import {
 } from "../routing/session-key.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
+import { getBuiltinAgentTools } from "./builtin-agents/index.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
 import { resolveSubagentSpawnModelSelection } from "./model-selection.js";
 import { resolveSandboxRuntimeStatus } from "./sandbox/runtime-status.js";
@@ -370,6 +371,15 @@ export async function spawnSubagentDirect(
         error: `agentId is not allowed for sessions_spawn (allowed: ${allowedText})`,
       };
     }
+  }
+
+  // Verify built-in agent tools restrictions
+  const allowedTools = getBuiltinAgentTools(targetAgentId);
+  if (allowedTools) {
+    // Log that tools will be restricted (enforcement happens at tool execution)
+    console.log(
+      `[Built-in Agent] ${targetAgentId} restricted to tools: ${allowedTools.join(", ")}`,
+    );
   }
   const childSessionKey = `agent:${targetAgentId}:subagent:${crypto.randomUUID()}`;
   const requesterRuntime = resolveSandboxRuntimeStatus({

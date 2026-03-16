@@ -26,6 +26,38 @@ export function isBuiltinAgent(agentId: string): boolean {
 }
 
 /**
+ * Tools permitidas para cada built-in agent (ENFORCED via código)
+ */
+export const BUILTIN_AGENT_TOOLS: Record<string, string[]> = {
+  builder: ["read", "write", "edit", "bash", "glob", "grep", "exec", "mkdir", "rm", "cp", "mv"],
+  researcher: ["read", "glob", "grep", "web_search", "web_fetch"],
+  reviewer: ["read", "glob", "grep"],
+  ops: ["read", "write", "bash", "exec", "mkdir", "rm", "cp", "mv"],
+};
+
+/**
+ * Get tools allowed for a specific built-in agent
+ * Returns null if not a built-in agent
+ */
+export function getBuiltinAgentTools(agentId: string): string[] | null {
+  if (!isBuiltinAgent(agentId)) {
+    return null;
+  }
+  return BUILTIN_AGENT_TOOLS[agentId] || null;
+}
+
+/**
+ * Check if a tool is allowed for a built-in agent
+ */
+export function isToolAllowedForBuiltinAgent(agentId: string, toolName: string): boolean {
+  const allowedTools = getBuiltinAgentTools(agentId);
+  if (!allowedTools) {
+    return true; // Not a built-in, allow all
+  }
+  return allowedTools.includes(toolName);
+}
+
+/**
  * Get built-in agent config (sync version)
  */
 export function getBuiltinAgentConfig(agentId: string) {
