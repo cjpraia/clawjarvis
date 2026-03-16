@@ -4,6 +4,11 @@ import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
+import {
+  injectShortTermMemory,
+  recordTurn,
+  resolveShortTermMemoryConfig,
+} from "../../agents/short-term-memory.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -223,6 +228,25 @@ export async function runReplyAgent(params: {
   }
 
   await typingSignals.signalRunStart();
+
+  // ═══ SHORT-TERM MEMORY: INJECT ═══
+  // Read recent turn entries and inject into context before agent run.
+  const stmConfig = resolveShortTermMemoryConfig(cfg?.agents?.defaults?.shortTermMemory);
+  if (stmConfig.enabled && !isHeartbeat) {
+    try {
+      const shortTermContext = await injectShortTermMemory({
+        workspaceDir: followupRun.run.workspaceDir,
+        config: stmConfig,
+      });
+      if (shortTermContext) {
+        followupRun.run.extraSystemPrompt = [followupRun.run.extraSystemPrompt, shortTermContext]
+          .filter(Boolean)
+          .join("\n\n");
+      }
+    } catch {
+      // Short-term memory injection is best-effort; never block the agent run.
+    }
+  }
 
   activeSessionEntry = await runMemoryFlushIfNeeded({
     cfg,
@@ -699,6 +723,23 @@ export async function runReplyAgent(params: {
     }
     if (responseUsageLine) {
       finalPayloads = appendUsageLine(finalPayloads, responseUsageLine);
+    }
+
+    // ═══ SHORT-TERM MEMORY: RECORD ═══
+    // Fire-and-forget — never blocks the response delivery.
+    if (stmConfig.enabled && !isHeartbeat) {
+      const replyText = finalPayloads
+        .map((p) => p.text)
+        .filter(Boolean)
+        .join("\n");
+      recordTurn({
+        workspaceDir: followupRun.run.workspaceDir,
+        sessionId: followupRun.run.sessionId,
+        turn: activeSessionEntry?.compactionCount ?? 0,
+        userInput: commandBody,
+        agentOutput: replyText,
+        config: stmConfig,
+      }).catch(() => {}); // Silent failure — recording must never disrupt delivery
     }
 
     return finalizeWithFollowup(

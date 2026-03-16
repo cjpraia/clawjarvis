@@ -1,3 +1,4 @@
+import type { ShortTermMemoryConfig } from "../agents/short-term-memory.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
 import type {
@@ -183,6 +184,8 @@ export type AgentDefaultsConfig = {
   };
   /** Vector memory search configuration (per-agent overrides supported). */
   memorySearch?: MemorySearchConfig;
+  /** Short-term memory: automatic per-turn diary injected into context. */
+  shortTermMemory?: ShortTermMemoryConfig;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "adaptive";
   /** Default verbose level when no /verbose directive is present. */
